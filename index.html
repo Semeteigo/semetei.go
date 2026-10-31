@@ -39,6 +39,7 @@ input,select{width:100%;padding:13px;border:1px solid var(--bd);border-radius:10
 .st{padding:10px 12px;border-radius:12px;background:var(--bg);border:1px solid var(--ac);margin-bottom:8px;font-weight:700}
 .nav a,a.tel{color:var(--tx);font-weight:700}.nav{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}
 .nav a{border:1px solid var(--bd);border-radius:99px;padding:8px 12px;text-decoration:none;font-size:14px}
+.chk{display:flex;gap:10px;align-items:center;margin:14px 0 0;font-size:16px;color:var(--tx)}.chk input{width:22px;height:22px;padding:0;flex:none}
 </style>
 </head>
 <body>
@@ -61,7 +62,7 @@ input,select{width:100%;padding:13px;border:1px solid var(--bd);border-radius:10
  <div class="sheet">
   <div class="sm" id="dr" hidden></div>
   <div class="row"><div class="sm" id="pt"></div><button class="me" id="me"></button></div>
-  <label id="lD"></label><select id="dest"></select>
+  <label id="lF"></label><input id="aF" maxlength="120"><label id="lD"></label><select id="dest"></select><input id="aT" maxlength="120" style="margin-top:8px"><label class="chk"><input type="checkbox" id="rt"><span id="lR"></span></label>
   <div class="price" id="pr"></div>
   <div class="st" id="st" hidden></div>
   <button class="go" id="go" disabled></button><button class="go no" id="cn" hidden></button>
@@ -75,17 +76,18 @@ input,select{width:100%;padding:13px;border:1px solid var(--bd);border-radius:10
 var SB_URL="https://tcngfquqhezwujvcqwek.supabase.co",SB_KEY="sb_publishable_2erPqS-1CGlCbgu7Gey1IA_wLFDCEEi";
 var sb=supabase.createClient(SB_URL,SB_KEY);
 // [название, цена от, цена до (0 если одна), ночная доплата 22:00–07:00]
+var ROUND=2; // во сколько раз дороже поездка «туда и обратно»
 var PLACES=[["Семетей (Покровка)",100,0,50],["Микрорайон",100,0,50],["Советский көчөсү",200,250,50],["Бала-Саруу",150,200,50],["Жайылган",150,0,50],["Жийде",150,180,50],["Заправка",150,0,50],["Чоң-Капка (Пушкин)",200,0,50],["Суу сактагыч",300,0,50],["Кызыл-Жылдыз",200,0,50],["Кеңеш",250,0,50],["Таможня",300,0,50],["Ак-Таш",250,0,50],["Үч-Коргон",300,0,50],["Манас",450,0,50],["Таш-Башат",300,0,50],["Айтматов (Богословка)",350,0,50],["Сөгөт",400,0,50],["Көк-Дөбө",400,0,50],["Талас (Табак-Совхоз)",500,0,50],["Арал",400,0,50],["Бетон завод",250,0,50],["Комплекс",250,0,50],["Стан",200,0,50],["Кара-Арча",450,0,50],["Кайынды",700,0,100],["Чолпонбай",700,0,200],["Кызыл-Адыр (Кировка)",700,0,200],["Ныдлы",1500,0,500],["Талас шаары",2000,0,500]];
 var T={
 ru:{c:"Клиент",d:"Водитель",reg:"Регистрация",log:"Вход",n:"Имя",p:"Номер телефона",w:"Пароль (от 6 символов)",sR:"Создать аккаунт",sL:"Войти",out:"Выйти",
  eN:"Введите имя",eP:"Номер: 9 цифр после +996",eW:"Пароль не короче 6 символов",eDup:"Этот номер уже зарегистрирован",eBad:"Неверный номер или пароль",eConf:"В Supabase отключите Confirm email (Authentication → Providers → Email)",
- none:"Нажмите на карту, где вас забрать",pt:"Подача: ",me:"📍 Где я",dd:"Куда (район)",go:"Заказать такси",cn:"Отменить заказ",night:" (ночной тариф)",geo:"Не удалось определить место. Нажмите на карту.",
+ none:"Нажмите на карту, где вас забрать",pt:"Подача: ",me:"📍 Где я",dd:"Куда (район)",lF:"Откуда: адрес или ориентир",fPh:"Например: ул. Ленина, 5",tPh:"Куда: адрес в районе (по желанию)",lR:"Туда и обратно (цена ×2)",rtD:"Туда и обратно",fD:"Откуда",tD:"Куда",go:"Заказать такси",cn:"Отменить заказ",night:" (ночной тариф)",geo:"Не удалось определить место. Нажмите на карту.",
  pend:"Заявка водителя ждёт одобрения администратором. Пока вы клиент.",
  s_new:"🔎 Ищем водителя…",s_taken:function(o){return"🚕 Водитель едет: "+(o.driver_name||"")},
  none2:"Новых заказов нет",take:"Принять заказ",fin:"Завершить поездку",mine:"Ваш заказ",noloc:"Место не отправлено",orderErr:"Не удалось отправить заказ. Попробуйте ещё раз."},
 ky:{c:"Жүргүнчү",d:"Айдоочу",reg:"Катталуу",log:"Кирүү",n:"Атыңыз",p:"Телефон номери",w:"Сыр сөз (6 белгиден)",sR:"Аккаунт түзүү",sL:"Кирүү",out:"Чыгуу",
  eN:"Атыңызды жазыңыз",eP:"Номер: +996дан кийин 9 сан",eW:"Сыр сөз кеминде 6 белги",eDup:"Бул номер катталган",eBad:"Номер же сыр сөз туура эмес",eConf:"Supabase'те Confirm email өчүрүңүз (Authentication → Providers → Email)",
- none:"Сизди кайдан алаарын картадан басыңыз",pt:"Алуу: ",me:"📍 Мен кайдамын",dd:"Кайда (район)",go:"Такси чакыруу",cn:"Заказды жокко чыгаруу",night:" (түнкү тариф)",geo:"Жайгашкан жерди аныктай алган жокпуз. Картадан басыңыз.",
+ none:"Сизди кайдан алаарын картадан басыңыз",pt:"Алуу: ",me:"📍 Мен кайдамын",dd:"Кайда (район)",lF:"Кайдан: дарек же ориентир",fPh:"Мисалы: Ленин көчөсү, 5",tPh:"Кайда: райондогу дарек (каалоо боюнча)",lR:"Бара-келе (баа ×2)",rtD:"Бара-келе",fD:"Кайдан",tD:"Кайда",go:"Такси чакыруу",cn:"Заказды жокко чыгаруу",night:" (түнкү тариф)",geo:"Жайгашкан жерди аныктай алган жокпуз. Картадан басыңыз.",
  pend:"Айдоочу арызыңыз администратордун бекитүүсүн күтүүдө. Азырынча жүргүнчүсүз.",
  s_new:"🔎 Айдоочу издеп жатабыз…",s_taken:function(o){return"🚕 Айдоочу келе жатат: "+(o.driver_name||"")},
  none2:"Жаңы заказ жок",take:"Заказды алуу",fin:"Сапарды аяктоо",mine:"Сиздин заказ",noloc:"Жер жөнөтүлгөн жок",orderErr:"Заказ жөнөтүлгөн жок. Кайра аракет кылыңыз."}
@@ -96,7 +98,7 @@ function $(i){return document.getElementById(i)}
 function esc(s){var d=document.createElement("div");d.textContent=s==null?"":s;return d.innerHTML}
 function t(k){return T[lang][k]}
 function night(){var h=new Date().getHours();return h>=22||h<7}
-function priceText(i){var p=PLACES[i],ex=night()?p[3]:0,a=p[1]+ex,b=(p[2]||p[1])+ex;return(a===b?a:a+"–"+b)+" сом"+(night()?t("night"):"")}
+function priceText(i){var p=PLACES[i],ex=night()?p[3]:0,m=$("rt")&&$("rt").checked?ROUND:1,a=(p[1]+ex)*m,b=((p[2]||p[1])+ex)*m;return(a===b?a:a+"–"+b)+" сом"+(night()?t("night"):"")}
 
 function drawStatic(){
  document.documentElement.lang=lang;
@@ -105,7 +107,7 @@ function drawStatic(){
  $("tR").textContent=t("reg");$("tL").textContent=t("log");$("tR").className=mode==="reg"?"on":"";$("tL").className=mode==="log"?"on":"";
  $("lN").textContent=t("n");$("lP").textContent=t("p");$("lW").textContent=t("w");$("wN").hidden=mode!=="reg";
  $("sub").textContent=mode==="reg"?t("sR"):t("sL");$("out").textContent=t("out");
- $("me").textContent=t("me");$("lD").textContent=t("dd");$("go").textContent=t("go");$("cn").textContent=t("cn");
+ $("me").textContent=t("me");$("lF").textContent=t("lF");$("aF").placeholder=t("fPh");$("aT").placeholder=t("tPh");$("lR").textContent=t("lR");$("lD").textContent=t("dd");$("go").textContent=t("go");$("cn").textContent=t("cn");
  var c=$("dest").value||"0";
  $("dest").innerHTML=PLACES.map(function(p,i){return'<option value="'+i+'">'+p[0]+'</option>'}).join("");$("dest").value=c;
  $("pr").textContent=priceText(+c);
@@ -136,7 +138,7 @@ $("me").onclick=function(){
  if(!navigator.geolocation){$("nt").textContent=t("geo");return}
  navigator.geolocation.getCurrentPosition(function(p){setP(L.latLng(p.coords.latitude,p.coords.longitude),true)},function(){$("nt").textContent=t("geo")},{enableHighAccuracy:true,timeout:15000});
 };
-$("dest").onchange=function(){$("pr").textContent=priceText(+$("dest").value)};
+$("dest").onchange=$("rt").onchange=function(){$("pr").textContent=priceText(+$("dest").value)};
 
 // ---- вход и регистрация ----
 function mail(p){return"p996"+p+"@semetey.kg"}
@@ -184,8 +186,8 @@ function drawC(){
  $("go").disabled=!pos;
 }
 $("go").onclick=async function(){
- var i=+$("dest").value,p=PLACES[i],ex=night()?p[3]:0;$("go").disabled=true;
- var r=await sb.from("orders").insert({client_name:me.name,client_phone:me.phone,lat:pos.lat,lng:pos.lng,place:p[0],price:p[1]+ex,price_text:priceText(i)});
+ var i=+$("dest").value,p=PLACES[i],ex=night()?p[3]:0,m=$("rt").checked?ROUND:1;$("go").disabled=true;
+ var r=await sb.from("orders").insert({client_name:me.name,client_phone:me.phone,lat:pos.lat,lng:pos.lng,place:p[0],price:(p[1]+ex)*m,price_text:priceText(i),from_text:$("aF").value.trim()||null,to_text:$("aT").value.trim()||null,round_trip:$("rt").checked});
  if(r.error)$("nt").textContent=t("orderErr");else{$("nt").textContent="";pollC()}
 };
 $("cn").onclick=async function(){if(cur){await sb.from("orders").update({status:"cancelled"}).eq("id",cur.id);pollC()}};
@@ -205,7 +207,7 @@ function drawD(){
  var h=orders.length?"":'<div class="card sm">'+t("none2")+'</div>';
  orders.forEach(function(o){
   var mine=o.driver_id===me.id;
-  h+='<div class="card"><div class="row"><b>→ '+esc(o.place)+'</b><b>'+esc(o.price_text)+'</b></div><div class="sm">'+esc(o.client_name)+' · <a class="tel" href="tel:'+esc(o.client_phone)+'">0'+esc(o.client_phone)+'</a></div>'+nav(o)
+  h+='<div class="card"><div class="row"><b>→ '+esc(o.place)+'</b><b>'+esc(o.price_text)+'</b></div><div class="sm">'+esc(o.client_name)+' · <a class="tel" href="tel:'+esc(o.client_phone)+'">0'+esc(o.client_phone)+'</a></div>'+(o.round_trip?'<div class="st">🔁 '+t("rtD")+'</div>':'')+(o.from_text?'<div class="sm">'+t("fD")+': '+esc(o.from_text)+'</div>':'')+(o.to_text?'<div class="sm">'+t("tD")+': '+esc(o.to_text)+'</div>':'')+nav(o)
    +'<button class="go'+(mine?' ok':'')+'" data-'+(mine?'fin':'take')+'="'+o.id+'">'+(mine?t("fin"):t("take"))+'</button></div>';
  });
  $("dl").innerHTML=h;
