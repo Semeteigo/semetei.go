@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Семетей Go</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1b1f24;--mut:#6b7380;--ac:#f5b700;--acx:#1b1f24;--bd:#e3e6ea}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171b;--card:#1e2329;--tx:#eef0f3;--mut:#9aa3af;--bd:#2c333b}}
+:root[data-theme="dark"]{--bg:#14171b;--card:#1e2329;--tx:#eef0f3;--mut:#9aa3af;--bd:#2c333b}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{display:flex;flex-direction:column;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#map{flex:1;min-height:0}
+.bar{position:absolute;z-index:1000;top:calc(env(safe-area-inset-top,0px) + 10px);left:10px;right:10px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+.logo,.lang{pointer-events:auto;background:var(--card);border:1px solid var(--bd);border-radius:99px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.logo{padding:8px 14px;font-weight:800}.logo span{color:var(--ac)}
+.lang{display:flex;overflow:hidden}.lang button{border:0;background:var(--card);color:var(--mut);padding:8px 12px;font-weight:700}
+.lang button.on{background:var(--ac);color:var(--acx)}
+.sheet{background:var(--card);border-top:1px solid var(--bd);border-radius:18px 18px 0 0;padding:14px 16px calc(env(safe-area-inset-bottom,0px) + 14px);margin-top:-14px;position:relative;z-index:1001}
+.row{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.pt{font-size:14px;color:var(--mut)}.pt b{color:var(--tx)}
+.me{border:1px solid var(--bd);background:var(--bg);color:var(--tx);border-radius:12px;padding:10px 12px;font-weight:700;font-size:14px;white-space:nowrap}
+label{display:block;font-size:13px;color:var(--mut);margin:12px 0 4px}
+select{width:100%;padding:13px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font-size:16px}
+.price{font-size:22px;font-weight:800;margin:10px 0 0}
+.go{width:100%;margin-top:10px;padding:15px;border:0;border-radius:14px;background:var(--ac);color:var(--acx);font-size:18px;font-weight:800}
+.go:disabled{opacity:.4}
+.note{font-size:13px;color:var(--mut);margin:8px 0 0;min-height:18px}
+</style>
+</head>
+<body>
+<div class="bar"><div class="logo">🚕 <span>Семетей Go</span></div><div class="lang"><button id="ru">RU</button><button id="ky">KG</button></div></div>
+<div id="map"></div>
+<div class="sheet">
+  <div class="row"><div class="pt" id="pt"></div><button class="me" id="me"></button></div>
+  <label id="lD"></label><select id="dest"></select>
+  <div class="price" id="pr"></div>
+  <button class="go" id="go" disabled></button>
+  <p class="note" id="note"></p>
+</div>
+<script>
+// [название, цена от, цена до (0 если одна), ночная доплата 22:00–07:00]
+var PLACES=[["Семетей (Покровка)",100,0,50],["Микрорайон",100,0,50],["Советский көчөсү",200,250,50],["Бала-Саруу",150,200,50],["Жайылган",150,0,50],["Жийде",150,180,50],["Заправка",150,0,50],["Чоң-Капка (Пушкин)",200,0,50],["Суу сактагыч",300,0,50],["Кызыл-Жылдыз",200,0,50],["Кеңеш",250,0,50],["Таможня",300,0,50],["Ак-Таш",250,0,50],["Үч-Коргон",300,0,50],["Манас",450,0,50],["Таш-Башат",300,0,50],["Айтматов (Богословка)",350,0,50],["Сөгөт",400,0,50],["Көк-Дөбө",400,0,50],["Талас (Табак-Совхоз)",500,0,50],["Арал",400,0,50],["Бетон завод",250,0,50],["Комплекс",250,0,50],["Стан",200,0,50],["Кара-Арча",450,0,50],["Кайынды",700,0,100],["Чолпонбай",700,0,200],["Кызыл-Адыр (Кировка)",700,0,200],["Ныдлы",1500,0,500],["Талас шаары",2000,0,500]];
+var T={
+ ru:{none:"Точка подачи не выбрана. Нажмите на карту.",pt:"Подача: ",me:"📍 Где я",d:"Куда (район)",go:"Заказать такси",night:" (ночной тариф)",geoErr:"Не удалось определить место. Разрешите доступ к геолокации или нажмите на карту.",soon:"Заказ заработает на этапе 4."},
+ ky:{none:"Алуу чекити тандалган жок. Картадан басыңыз.",pt:"Алуу: ",me:"📍 Мен кайдамын",d:"Кайда (район)",go:"Такси чакыруу",night:" (түнкү тариф)",geoErr:"Жайгашкан жерди аныктай алган жокпуз. Геолокацияга уруксат бериңиз же картадан басыңыз.",soon:"Заказ 4-этапта иштейт."}
+};
+var lang="ru",pos=null,mk=null;
+try{lang=localStorage.getItem("lang")||"ru"}catch(e){}
+function $(i){return document.getElementById(i)}
+var map=L.map("map",{zoomControl:false}).setView([42.5228,72.2428],12);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map);
+function setP(ll,zoom){
+  pos={lat:ll.lat,lng:ll.lng};
+  if(!mk){mk=L.marker(ll,{draggable:true}).addTo(map);mk.on("dragend",function(){setP(mk.getLatLng())})}else mk.setLatLng(ll);
+  if(zoom)map.setView(ll,16);
+  $("note").textContent="";draw();
+}
+map.on("click",function(e){setP(e.latlng)});
+$("me").onclick=function(){
+  if(!navigator.geolocation){$("note").textContent=T[lang].geoErr;return}
+  navigator.geolocation.getCurrentPosition(function(p){setP(L.latLng(p.coords.latitude,p.coords.longitude),true)},function(){$("note").textContent=T[lang].geoErr},{enableHighAccuracy:true,timeout:15000});
+};
+function night(){var h=new Date().getHours();return h>=22||h<7}
+function priceText(i){var p=PLACES[i],ex=night()?p[3]:0,a=p[1]+ex,b=(p[2]||p[1])+ex;return(a===b?a:a+"–"+b)+" сом"+(night()?T[lang].night:"")}
+function draw(){
+  var t=T[lang],cur=$("dest").value||"0";
+  document.documentElement.lang=lang;
+  $("ru").className=lang==="ru"?"on":"";$("ky").className=lang==="ky"?"on":"";
+  $("me").textContent=t.me;$("lD").textContent=t.d;$("go").textContent=t.go;
+  $("pt").innerHTML=pos?t.pt+"<b>"+pos.lat.toFixed(5)+", "+pos.lng.toFixed(5)+"</b>":t.none;
+  $("dest").innerHTML=PLACES.map(function(p,i){return'<option value="'+i+'">'+p[0]+'</option>'}).join("");
+  $("dest").value=cur;
+  $("pr").textContent=priceText(+cur);
+  $("go").disabled=!pos;
+}
+$("dest").onchange=function(){$("pr").textContent=priceText(+$("dest").value)};
+$("go").onclick=function(){$("note").textContent=T[lang].soon};
+$("ru").onclick=function(){lang="ru";try{localStorage.setItem("lang",lang)}catch(e){}draw()};
+$("ky").onclick=function(){lang="ky";try{localStorage.setItem("lang",lang)}catch(e){}draw()};
+draw();
+</script>
+</body>
+</html>
