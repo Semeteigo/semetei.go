@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Семетей Go</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1b1f24;--mut:#6b7380;--ac:#f5b700;--acx:#1b1f24;--bd:#e3e6ea;--er:#d93025;--ok:#1f9d55}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171b;--card:#1e2329;--tx:#eef0f3;--mut:#9aa3af;--bd:#2c333b;--er:#ff6b60;--ok:#3ecf7a}}
+:root[data-theme="dark"]{--bg:#14171b;--card:#1e2329;--tx:#eef0f3;--mut:#9aa3af;--bd:#2c333b;--er:#ff6b60;--ok:#3ecf7a}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{display:flex;flex-direction:column;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+[hidden]{display:none!important}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 8px) 12px 8px;background:var(--card);border-bottom:1px solid var(--bd);z-index:1002}
+.logo{font-weight:800}.logo span{color:var(--ac)}
+.lang{display:flex;border:1px solid var(--bd);border-radius:99px;overflow:hidden}.lang button{border:0;background:var(--card);color:var(--mut);padding:7px 11px;font-weight:700}
+.lang button.on{background:var(--ac);color:var(--acx)}
+.lnk{border:0;background:none;color:var(--mut);font-weight:700;padding:6px}
+.page{flex:1;min-height:0;overflow:auto;padding:16px;max-width:460px;width:100%;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px;margin-bottom:12px}
+.seg,.tabs{display:flex;gap:8px;margin-bottom:8px}
+.seg button,.tabs button{flex:1;padding:12px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:12px;font-size:16px;font-weight:700}
+.seg button.on,.tabs button.on{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+label{display:block;font-size:13px;color:var(--mut);margin:12px 0 4px}
+input,select{width:100%;padding:13px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font-size:16px}
+.ph{display:flex;gap:8px;align-items:center}.ph b{font-size:16px}
+.go{width:100%;margin-top:12px;padding:15px;border:0;border-radius:14px;background:var(--ac);color:var(--acx);font-size:18px;font-weight:800}
+.go.ok{background:var(--ok);color:#fff}.go.no{background:var(--card);color:var(--er);border:1px solid var(--er)}
+.go:disabled{opacity:.4}
+.err{color:var(--er);min-height:20px;margin:10px 0 0;font-size:14px}
+.sm{font-size:14px;color:var(--mut)}.row{display:flex;justify-content:space-between;gap:8px;align-items:center}
+#cV{flex:1;min-height:0;display:flex;flex-direction:column}#map{flex:1;min-height:0}
+.sheet{background:var(--card);border-top:1px solid var(--bd);border-radius:18px 18px 0 0;padding:14px 16px calc(env(safe-area-inset-bottom,0px) + 14px);margin-top:-14px;position:relative;z-index:1001}
+.me{border:1px solid var(--bd);background:var(--bg);color:var(--tx);border-radius:12px;padding:10px 12px;font-weight:700;font-size:14px;white-space:nowrap}
+.price{font-size:22px;font-weight:800;margin:10px 0 0}
+.st{padding:10px 12px;border-radius:12px;background:var(--bg);border:1px solid var(--ac);margin-bottom:8px;font-weight:700}
+.nav a,a.tel{color:var(--tx);font-weight:700}.nav{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}
+.nav a{border:1px solid var(--bd);border-radius:99px;padding:8px 12px;text-decoration:none;font-size:14px}
+.chk{display:flex;gap:10px;align-items:center;margin:14px 0 0;font-size:16px;color:var(--tx)}.chk input{width:22px;height:22px;padding:0;flex:none}
+.srch{display:flex;gap:8px}.srch input{flex:1;min-width:0}.srch button{border:1px solid var(--bd);background:var(--bg);color:var(--tx);border-radius:10px;padding:0 14px;font-size:18px}.res{margin-top:6px}.res button{display:block;width:100%;text-align:left;padding:10px 12px;margin-bottom:6px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);font-size:15px}.res .sm{padding:4px 2px}
+</style>
+</head>
+<body>
+<div class="top"><div class="logo">🚕 <span>Семетей Go</span></div>
+ <div class="row"><button class="lnk" id="out" hidden></button><div class="lang"><button id="ru">RU</button><button id="ky">KG</button></div></div></div>
+
+<section id="vA" class="page">
+ <div class="card">
+  <div class="seg"><button id="rc"></button><button id="rd"></button></div>
+  <div class="tabs"><button id="tR"></button><button id="tL"></button></div>
+  <div id="wN"><label id="lN"></label><input id="fN" autocomplete="name"></div>
+  <label id="lP"></label><div class="ph"><b>+996</b><input id="fP" type="tel" inputmode="numeric" maxlength="12" placeholder="700 123 456"></div>
+  <label id="lW"></label><input id="fW" type="password" autocomplete="current-password">
+  <p class="err" id="er"></p><button class="go" id="sub"></button>
+ </div>
+</section>
+
+<section id="cV" hidden>
+ <div id="map"></div>
+ <div class="sheet">
+  <div class="sm" id="dr" hidden></div>
+  <div class="row"><div class="sm" id="pt"></div><button class="me" id="me"></button></div>
+  <label id="lF"></label><div class="srch"><input id="aF" maxlength="120"><button id="bF" type="button">🔍</button></div><div class="res" id="rF"></div><label id="lD"></label><select id="dest"></select><div class="srch" style="margin-top:8px"><input id="aT" maxlength="120"><button id="bT" type="button">🔍</button></div><div class="res" id="rT"></div><label class="chk"><input type="checkbox" id="rt"><span id="lR"></span></label>
+  <div class="price" id="pr"></div>
+  <div class="st" id="st" hidden></div>
+  <button class="go" id="go" disabled></button><button class="go no" id="cn" hidden></button>
+  <p class="err" id="nt"></p>
+ </div>
+</section>
+
+<section id="dV" class="page" hidden><div id="dl"></div></section>
+
+<script>
+var SB_URL="https://tcngfquqhezwujvcqwek.supabase.co",SB_KEY="sb_publishable_2erPqS-1CGlCbgu7Gey1IA_wLFDCEEi";
+var sb=supabase.createClient(SB_URL,SB_KEY);
+// [название, цена от, цена до (0 если одна), ночная доплата 22:00–07:00]
+var ROUND=2; // во сколько раз дороже поездка «туда и обратно»
+var PLACES=[["Семетей (Покровка)",100,0,50],["Микрорайон",100,0,50],["Советский көчөсү",200,250,50],["Бала-Саруу",150,200,50],["Жайылган",150,0,50],["Жийде",150,180,50],["Заправка",150,0,50],["Чоң-Капка (Пушкин)",200,0,50],["Суу сактагыч",300,0,50],["Кызыл-Жылдыз",200,0,50],["Кеңеш",250,0,50],["Таможня",300,0,50],["Ак-Таш",250,0,50],["Үч-Коргон",300,0,50],["Манас",450,0,50],["Таш-Башат",300,0,50],["Айтматов (Богословка)",350,0,50],["Сөгөт",400,0,50],["Көк-Дөбө",400,0,50],["Талас (Табак-Совхоз)",500,0,50],["Арал",400,0,50],["Бетон завод",250,0,50],["Комплекс",250,0,50],["Стан",200,0,50],["Кара-Арча",450,0,50],["Кайынды",700,0,100],["Чолпонбай",700,0,200],["Кызыл-Адыр (Кировка)",700,0,200],["Ныдлы",1500,0,500],["Талас шаары",2000,0,500]];
+var T={
+ru:{c:"Клиент",d:"Водитель",reg:"Регистрация",log:"Вход",n:"Имя",p:"Номер телефона",w:"Пароль (от 6 символов)",sR:"Создать аккаунт",sL:"Войти",out:"Выйти",
+ eN:"Введите имя",eP:"Номер: 9 цифр после +996",eW:"Пароль не короче 6 символов",eDup:"Этот номер уже зарегистрирован",eBad:"Неверный номер или пароль",eConf:"В Supabase отключите Confirm email (Authentication → Providers → Email)",
+ none:"Нажмите на карту, где вас забрать",pt:"Подача: ",me:"📍 Где я",dd:"Куда (район)",lF:"Откуда: улица и дом (нажмите 🔍 для поиска)",fPh:"Например: Ленина 5",tPh:"Куда: улица и дом (по желанию, 🔍 поиск)",lR:"Туда и обратно (цена ×2)",srching:"Ищем…",nores:"Ничего не найдено. Можно написать адрес вручную.",serr:"Поиск не работает. Напишите адрес вручную.",rtD:"Туда и обратно",fD:"Откуда",tD:"Куда",go:"Заказать такси",cn:"Отменить заказ",night:" (ночной тариф)",geo:"Не удалось определить место. Нажмите на карту.",
+ pend:"Заявка водителя ждёт одобрения администратором. Пока вы клиент.",
+ s_new:"🔎 Ищем водителя…",s_taken:function(o){return"🚕 Водитель едет: "+(o.driver_name||"")},
+ none2:"Новых заказов нет",take:"Принять заказ",fin:"Завершить поездку",mine:"Ваш заказ",noloc:"Место не отправлено",orderErr:"Не удалось отправить заказ. Попробуйте ещё раз."},
+ky:{c:"Жүргүнчү",d:"Айдоочу",reg:"Катталуу",log:"Кирүү",n:"Атыңыз",p:"Телефон номери",w:"Сыр сөз (6 белгиден)",sR:"Аккаунт түзүү",sL:"Кирүү",out:"Чыгуу",
+ eN:"Атыңызды жазыңыз",eP:"Номер: +996дан кийин 9 сан",eW:"Сыр сөз кеминде 6 белги",eDup:"Бул номер катталган",eBad:"Номер же сыр сөз туура эмес",eConf:"Supabase'те Confirm email өчүрүңүз (Authentication → Providers → Email)",
+ none:"Сизди кайдан алаарын картадан басыңыз",pt:"Алуу: ",me:"📍 Мен кайдамын",dd:"Кайда (район)",lF:"Кайдан: көчө жана үй (🔍 басыңыз)",fPh:"Мисалы: Ленин 5",tPh:"Кайда: көчө жана үй (каалоо боюнча, 🔍)",lR:"Бара-келе (баа ×2)",srching:"Издеп жатабыз…",nores:"Табылган жок. Даректи өзүңүз жазсаңыз болот.",serr:"Издөө иштебей жатат. Даректи өзүңүз жазыңыз.",rtD:"Бара-келе",fD:"Кайдан",tD:"Кайда",go:"Такси чакыруу",cn:"Заказды жокко чыгаруу",night:" (түнкү тариф)",geo:"Жайгашкан жерди аныктай алган жокпуз. Картадан басыңыз.",
+ pend:"Айдоочу арызыңыз администратордун бекитүүсүн күтүүдө. Азырынча жүргүнчүсүз.",
+ s_new:"🔎 Айдоочу издеп жатабыз…",s_taken:function(o){return"🚕 Айдоочу келе жатат: "+(o.driver_name||"")},
+ none2:"Жаңы заказ жок",take:"Заказды алуу",fin:"Сапарды аяктоо",mine:"Сиздин заказ",noloc:"Жер жөнөтүлгөн жок",orderErr:"Заказ жөнөтүлгөн жок. Кайра аракет кылыңыз."}
+};
+var lang="ru",role="c",mode="reg",me=null,pos=null,mk=null,map=null,cur=null,orders=[],timer=null,view="a";
+try{lang=localStorage.getItem("lang")||"ru";role=localStorage.getItem("role")||"c"}catch(e){}
+function $(i){return document.getElementById(i)}
+function esc(s){var d=document.createElement("div");d.textContent=s==null?"":s;return d.innerHTML}
+function t(k){return T[lang][k]}
+function night(){var h=new Date().getHours();return h>=22||h<7}
+function priceText(i){var p=PLACES[i],ex=night()?p[3]:0,m=$("rt")&&$("rt").checked?ROUND:1,a=(p[1]+ex)*m,b=((p[2]||p[1])+ex)*m;return(a===b?a:a+"–"+b)+" сом"+(night()?t("night"):"")}
+
+function drawStatic(){
+ document.documentElement.lang=lang;
+ $("ru").className=lang==="ru"?"on":"";$("ky").className=lang==="ky"?"on":"";
+ $("rc").textContent=t("c");$("rd").textContent=t("d");$("rc").className=role==="c"?"on":"";$("rd").className=role==="d"?"on":"";
+ $("tR").textContent=t("reg");$("tL").textContent=t("log");$("tR").className=mode==="reg"?"on":"";$("tL").className=mode==="log"?"on":"";
+ $("lN").textContent=t("n");$("lP").textContent=t("p");$("lW").textContent=t("w");$("wN").hidden=mode!=="reg";
+ $("sub").textContent=mode==="reg"?t("sR"):t("sL");$("out").textContent=t("out");
+ $("me").textContent=t("me");$("lF").textContent=t("lF");$("aF").placeholder=t("fPh");$("aT").placeholder=t("tPh");$("lR").textContent=t("lR");$("lD").textContent=t("dd");$("go").textContent=t("go");$("cn").textContent=t("cn");
+ var c=$("dest").value||"0";
+ $("dest").innerHTML=PLACES.map(function(p,i){return'<option value="'+i+'">'+p[0]+'</option>'}).join("");$("dest").value=c;
+ $("pr").textContent=priceText(+c);
+ $("pt").textContent=pos?t("pt")+pos.lat.toFixed(5)+", "+pos.lng.toFixed(5):t("none");
+ $("dr").hidden=!(me&&role==="d"&&!me.is_driver);$("dr").textContent=t("pend");
+ drawC();if(view==="d")drawD();
+}
+function show(v){
+ view=v;$("vA").hidden=v!=="a";$("cV").hidden=v!=="c";$("dV").hidden=v!=="d";$("out").hidden=v==="a";
+ clearInterval(timer);
+ if(v==="c"){initMap();setTimeout(function(){map.invalidateSize()},50);pollC();timer=setInterval(pollC,4000)}
+ if(v==="d"){pollD();timer=setInterval(pollD,4000)}
+ drawStatic();
+}
+function initMap(){
+ if(map)return;
+ map=L.map("map",{zoomControl:false}).setView([42.5228,72.2428],12);
+ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map);
+ map.on("click",function(e){setP(e.latlng)});
+}
+function setP(ll,zoom){
+ pos={lat:ll.lat,lng:ll.lng};
+ if(!mk){mk=L.marker(ll,{draggable:true}).addTo(map);mk.on("dragend",function(){setP(mk.getLatLng())})}else mk.setLatLng(ll);
+ if(zoom)map.setView(ll,16);
+ $("nt").textContent="";drawStatic();
+}
+$("me").onclick=function(){
+ if(!navigator.geolocation){$("nt").textContent=t("geo");return}
+ navigator.geolocation.getCurrentPosition(function(p){setP(L.latLng(p.coords.latitude,p.coords.longitude),true)},function(){$("nt").textContent=t("geo")},{enableHighAccuracy:true,timeout:15000});
+};
+$("dest").onchange=$("rt").onchange=function(){$("pr").textContent=priceText(+$("dest").value)};
+
+// ---- поиск адреса (OpenStreetMap Nominatim) ----
+var resF=[],resT=[];
+function shortName(x){var a=x.address||{},st=a.road||a.pedestrian||a.footway||"",h=a.house_number||"",loc=a.village||a.town||a.city||a.suburb||a.hamlet||"";var v=[(st+" "+h).trim(),loc].filter(Boolean).join(", ");return v||x.display_name.split(",").slice(0,3).join(",")}
+async function geo(inp,box,store){
+ var q=$(inp).value.trim(),b=$(box);if(q.length<3){b.innerHTML="";return}
+ b.innerHTML='<div class="sm">'+t("srching")+'</div>';
+ try{
+  var r=await fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&countrycodes=kg&accept-language=ru&viewbox=71.0,43.0,73.3,42.0&bounded=1&q="+encodeURIComponent(q));
+  var d=await r.json();window[store]=d;
+  b.innerHTML=d.length?d.map(function(x,i){return'<button type="button" data-i="'+i+'">📍 '+esc(shortName(x))+'</button>'}).join(""):'<div class="sm">'+t("nores")+'</div>';
+ }catch(e){b.innerHTML='<div class="sm">'+t("serr")+'</div>'}
+}
+$("bF").onclick=function(){geo("aF","rF","resF")};$("bT").onclick=function(){geo("aT","rT","resT")};
+$("aF").onkeydown=function(e){if(e.key==="Enter")geo("aF","rF","resF")};
+$("aT").onkeydown=function(e){if(e.key==="Enter")geo("aT","rT","resT")};
+$("rF").onclick=function(e){var b=e.target.closest("button");if(!b)return;var x=resF[+b.dataset.i];$("aF").value=shortName(x);$("rF").innerHTML="";setP(L.latLng(+x.lat,+x.lon),true)};
+$("rT").onclick=function(e){var b=e.target.closest("button");if(!b)return;$("aT").value=shortName(resT[+b.dataset.i]);$("rT").innerHTML=""};
+
+// ---- вход и регистрация ----
+function mail(p){return"p996"+p+"@semetey.kg"}
+function er(m){$("er").textContent=m}
+async function submit(){
+ var n=$("fN").value.trim(),p=$("fP").value.replace(/\D/g,""),w=$("fW").value,r;
+ if(mode==="reg"&&n.length<2)return er(t("eN"));
+ if(p.length!==9)return er(t("eP"));
+ if(w.length<6)return er(t("eW"));
+ $("sub").disabled=true;er("");
+ if(mode==="reg"){
+  r=await sb.auth.signUp({email:mail(p),password:w});
+  if(r.error){$("sub").disabled=false;return er(/registered/i.test(r.error.message)?t("eDup"):r.error.message)}
+  if(!r.data.session){$("sub").disabled=false;return er(t("eConf"))}
+  var ins=await sb.from("profiles").insert({id:r.data.user.id,name:n,phone:p,driver_requested:role==="d"});
+  if(ins.error){$("sub").disabled=false;return er(ins.error.message)}
+ }else{
+  r=await sb.auth.signInWithPassword({email:mail(p),password:w});
+  if(r.error){$("sub").disabled=false;return er(t("eBad"))}
+ }
+ $("sub").disabled=false;await enter();
+}
+async function enter(){
+ var u=(await sb.auth.getUser()).data.user;if(!u)return show("a");
+ var q=await sb.from("profiles").select("*").eq("id",u.id).single();
+ if(!q.data){await sb.auth.signOut();return show("a")}
+ me=q.data;try{localStorage.setItem("role",role)}catch(e){}
+ show(role==="d"&&me.is_driver?"d":"c");
+}
+$("sub").onclick=submit;
+$("out").onclick=async function(){await sb.auth.signOut();me=null;cur=null;show("a")};
+$("rc").onclick=function(){role="c";drawStatic()};$("rd").onclick=function(){role="d";drawStatic()};
+$("tR").onclick=function(){mode="reg";er("");drawStatic()};$("tL").onclick=function(){mode="log";er("");drawStatic()};
+$("ru").onclick=function(){lang="ru";try{localStorage.setItem("lang",lang)}catch(e){}drawStatic()};
+$("ky").onclick=function(){lang="ky";try{localStorage.setItem("lang",lang)}catch(e){}drawStatic()};
+
+// ---- клиент ----
+async function pollC(){
+ var r=await sb.from("orders").select("*").eq("client_id",me.id).order("id",{ascending:false}).limit(1);
+ var o=r.data&&r.data[0];cur=o&&(o.status==="new"||o.status==="taken")?o:null;drawC();
+}
+function drawC(){
+ var a=!!cur;$("st").hidden=!a;$("go").hidden=a;$("cn").hidden=!a;
+ if(a){var s=T[lang]["s_"+cur.status];$("st").textContent=typeof s==="function"?s(cur):s}
+ $("go").disabled=!pos;
+}
+$("go").onclick=async function(){
+ var i=+$("dest").value,p=PLACES[i],ex=night()?p[3]:0,m=$("rt").checked?ROUND:1;$("go").disabled=true;
+ var r=await sb.from("orders").insert({client_name:me.name,client_phone:me.phone,lat:pos.lat,lng:pos.lng,place:p[0],price:(p[1]+ex)*m,price_text:priceText(i),from_text:$("aF").value.trim()||null,to_text:$("aT").value.trim()||null,round_trip:$("rt").checked});
+ if(r.error)$("nt").textContent=t("orderErr");else{$("nt").textContent="";pollC()}
+};
+$("cn").onclick=async function(){if(cur){await sb.from("orders").update({status:"cancelled"}).eq("id",cur.id);pollC()}};
+
+// ---- водитель ----
+async function pollD(){
+ var r=await sb.from("orders").select("*").in("status",["new","taken"]).order("id");
+ orders=(r.data||[]).filter(function(o){return o.status==="new"||o.driver_id===me.id});drawD();
+}
+function nav(o){
+ var g='https://www.google.com/maps/dir/?api=1&destination='+o.lat+','+o.lng,y='https://yandex.com/maps/?rtext=~'+o.lat+','+o.lng+'&rtt=auto',d='https://2gis.kg/routeSearch/rsType/car/to/'+o.lng+','+o.lat;
+ if(o.lat==null)return'<div class="sm">'+t("noloc")+'</div>';
+ var a=function(u,x){return'<a target="_blank" rel="noopener" href="'+u+'">🧭 '+x+'</a>'};
+ return'<div class="nav">'+a(d,"2ГИС")+a(y,"Яндекс")+a(g,"Google")+'</div>';
+}
+function drawD(){
+ var h=orders.length?"":'<div class="card sm">'+t("none2")+'</div>';
+ orders.forEach(function(o){
+  var mine=o.driver_id===me.id;
+  h+='<div class="card"><div class="row"><b>→ '+esc(o.place)+'</b><b>'+esc(o.price_text)+'</b></div><div class="sm">'+esc(o.client_name)+' · <a class="tel" href="tel:'+esc(o.client_phone)+'">0'+esc(o.client_phone)+'</a></div>'+(o.round_trip?'<div class="st">🔁 '+t("rtD")+'</div>':'')+(o.from_text?'<div class="sm">'+t("fD")+': '+esc(o.from_text)+'</div>':'')+(o.to_text?'<div class="sm">'+t("tD")+': '+esc(o.to_text)+'</div>':'')+nav(o)
+   +'<button class="go'+(mine?' ok':'')+'" data-'+(mine?'fin':'take')+'="'+o.id+'">'+(mine?t("fin"):t("take"))+'</button></div>';
+ });
+ $("dl").innerHTML=h;
+}
+$("dl").onclick=async function(e){
+ var b=e.target.closest("button");if(!b)return;
+ if(b.dataset.take)await sb.from("orders").update({status:"taken",driver_id:me.id,driver_name:me.name}).eq("id",b.dataset.take).eq("status","new");
+ if(b.dataset.fin)await sb.from("orders").update({status:"done"}).eq("id",b.dataset.fin);
+ pollD();
+};
+
+drawStatic();
+sb.auth.getSession().then(function(r){if(r.data.session)enter()});
+</script>
+</body>
+</html>
